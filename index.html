@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>shiftroll 值班表</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#f5f7fa;color:#1d2530}
+header{padding:14px 20px;background:#fff;border-bottom:1px solid #e2e7ee}
+main{padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+.card{background:#fff;border:1px solid #e2e7ee;border-radius:12px;padding:14px}
+.cal{display:flex;flex-wrap:wrap;gap:6px}
+.day{min-width:64px;padding:8px 6px;border-radius:9px;background:#eef3fa;text-align:center;font-size:13px}
+.day b{display:block;font-size:15px;color:#2f6fed}
+.day.off{background:#fdeeee;color:#b3261e}
+button{font:inherit;padding:5px 12px;margin:0 8px 8px 0;border:1px solid #ccd4de;border-radius:8px;background:#fff;cursor:pointer}
+button.main{background:#2f6fed;border-color:#2f6fed;color:#fff}
+input{font:inherit;padding:5px 8px;border:1px solid #ccd4de;border-radius:8px;width:90px}
+table{border-collapse:collapse;font-size:13px}
+td,th{border-bottom:1px solid #eef1f5;padding:5px 10px;text-align:left}
+pre{background:#0f172a;color:#cfe0ff;padding:12px;border-radius:10px;overflow:auto;font-size:12px}
+</style></head>
+<body>
+<header><h1 style="font-size:17px;margin:0 0 4px">shiftroll 值班表</h1>
+<p style="margin:0;color:#5b6779;font-size:13px">名册环形轮值，请假的人跳过；排错了可以撤销最近一天。</p></header>
+<main>
+  <div>
+    <div class="card"><div class="cal" id="cal"></div></div>
+    <pre id="out">还没跑</pre>
+  </div>
+  <div class="card">
+    <h2 style="font-size:13px;color:#5b6779">操作</h2>
+    <div><button id="plan" class="main">排下一天</button><button id="undo">撤销一天</button></div>
+    <div>请假 <input id="who" value="b"><button id="leave">登记</button><button id="back">销假</button></div>
+    <table id="counts"><tr><th>人</th><th>天数</th></tr></table>
+    <div id="mark" style="font-size:13px;color:#5b6779"></div>
+  </div>
+</main>
+<div id="scene" hidden>{
+  "roster": ["a", "b", "c"],
+  "state": { "roster": ["a", "b", "c"], "cursor": 0, "days": [], "leaves": [], "skips": 0, "undos": 0 },
+  "events": [
+    { "kind": "plan" },
+    { "kind": "leave", "name": "b" },
+    { "kind": "plan" },
+    { "kind": "plan" },
+    { "kind": "undo" },
+    { "kind": "plan" },
+    { "kind": "back", "name": "b" }
+  ]
+}</div>
+<script type="module">
+import { render } from "./app.js";
+
+const spec = JSON.parse(document.getElementById("scene").textContent);
+const cal = document.getElementById("cal");
+function draw() {
+  const view = render(spec);
+  document.getElementById("out").textContent = JSON.stringify(view, null, 1);
+  cal.textContent = "";
+  view.days.forEach(function (row) {
+    const box = document.createElement("div");
+    box.className = view.leaves.indexOf(row[1]) >= 0 ? "day off" : "day";
+    box.innerHTML = "第 " + row[0] + " 天<b>" + row[1] + "</b>";
+    cal.appendChild(box);
+  });
+  const table = document.getElementById("counts");
+  table.textContent = "";
+  const head = document.createElement("tr");
+  head.innerHTML = "<th>人</th><th>天数</th>";
+  table.appendChild(head);
+  view.counts.forEach(function (row) {
+    const line = document.createElement("tr");
+    line.innerHTML = "<td>" + row[0] + "</td><td>" + row[1] + "</td>";
+    table.appendChild(line);
+  });
+  document.getElementById("mark").textContent =
+    "顺位 " + view.cursor_name + "，跳过 " + view.skips + " 次，撤销 " + view.undos + " 次，"
+    + (view.covered ? "覆盖完整" : "覆盖有问题");
+}
+document.getElementById("plan").addEventListener("click", function () { spec.events.push({ kind: "plan" }); draw(); });
+document.getElementById("undo").addEventListener("click", function () { spec.events.push({ kind: "undo" }); draw(); });
+document.getElementById("leave").addEventListener("click", function () { spec.events.push({ kind: "leave", name: document.getElementById("who").value }); draw(); });
+document.getElementById("back").addEventListener("click", function () { spec.events.push({ kind: "back", name: document.getElementById("who").value }); draw(); });
+draw();
+</script>
+</body>
+</html>

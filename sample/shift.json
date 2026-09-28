@@ -1,0 +1,13 @@
+{
+  "roster": ["a", "b", "c"],
+  "state": { "roster": ["a", "b", "c"], "cursor": 0, "days": [], "leaves": [], "skips": 0, "undos": 0 },
+  "events": [
+    { "kind": "plan" },
+    { "kind": "leave", "name": "b" },
+    { "kind": "plan" },
+    { "kind": "plan" },
+    { "kind": "undo" },
+    { "kind": "plan" },
+    { "kind": "back", "name": "b" }
+  ]
+}
